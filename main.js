@@ -29,9 +29,9 @@ pointLight.position.set(5, 20, 20);
 const ambientLight = new THREE.AmbientLight(0xffffff);
 scene.add(pointLight, ambientLight);
 //Show grid and lightsource
-const lightHelper = new THREE.PointLightHelper(pointLight)
-const gridHelper = new THREE.GridHelper(200, 50);
-scene.add(lightHelper, gridHelper) //TODO why not work
+//const lightHelper = new THREE.PointLightHelper(pointLight)
+//const gridHelper = new THREE.GridHelper(200, 50);
+//scene.add(lightHelper, gridHelper) //TODO why not work
 //Mouse controls for camera
 const controls = new OrbitControls(camera, renderer.domElement);
 
@@ -45,17 +45,18 @@ const sami = new THREE.Mesh(
 scene.add(sami);
 // Moon
 const moonTexture = new THREE.TextureLoader().load('./Pictures/moon.jpg');
-//const normalTexture = new THREE.TextureLoader().load('./Pitctures/normal.jpg');
+const normalTexture = new THREE.TextureLoader().load('./Pitctures/normal.jpg');
 
 const moon = new THREE.Mesh(
   new THREE.SphereGeometry(3,32,32),
   new THREE.MeshStandardMaterial({
-    map:moonTexture
-    //normalMap: normalTexture
+    map: moonTexture,
+    normalMap: normalTexture
   })
 );
 scene.add(moon);
- 
+ moon.position.z = 20;
+ moon.position.setX(-10);
 function addStar(){
   const geometry = new THREE.SphereGeometry(0.25, 24, 24);
   const material= new THREE.MeshStandardMaterial({color: 0xffffff})
@@ -68,6 +69,23 @@ function addStar(){
 Array(200).fill().forEach(addStar)
 const backgroundTexture = new THREE.TextureLoader().load('./Pictures/pexels-juan-agustin-2340254.jpg');
 scene.background=backgroundTexture;
+
+function moveCamera(){
+  const t = document.body.getBoundingClientRect().top;
+  moon.rotation.x +=0.05;
+  moon.rotation.y +=0.075;
+  moon.rotation.z +=0.05;
+
+  
+  sami.rotation.z +=0.01;
+  sami.rotation.y +=0.05;
+  camera.position.z = t* -0.01;
+  camera.position.x= t* -0.0002;
+  camera.position.y = t* -0.0002;
+  
+  
+}
+document.body.onscroll=moveCamera;
 function animate() {
   requestAnimationFrame(animate);
   torus.rotation.x += 0.01;
