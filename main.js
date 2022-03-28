@@ -4,10 +4,28 @@ import * as THREE from 'three';
 import {
   OrbitControls
 } from 'three/examples/jsm/controls/OrbitControls'
-import { AmbientLight } from 'three';
+import {
+  AmbientLight
+} from 'three';
+import {
+  EffectComposer
+} from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import {
+  RenderPass
+} from 'three/examples/jsm/postprocessing/RenderPass';
+import {
+  ShaderPass
+} from 'three/examples/jsm/postprocessing/ShaderPass';
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); //fieldOfView, AspectRatio, ViewFrustum (What objects are visible in relation to the camera?)
+import {
+  RGBShiftShader
+} from 'three/examples/jsm/shaders/RGBShiftShader.js';
+import {
+  DotScreenShader
+} from 'three/examples/jsm/shaders/DotScreenShader.js';
+
+const scene = new THREE.Scene();2
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000); //fieldOfView, AspectRatio, ViewFrustum (What objects are visible in relation to the camera?)
 const renderer = new THREE.WebGLRenderer({
   canvas: document.querySelector('#bg'),
 });
@@ -15,8 +33,19 @@ renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 camera.position.setZ(30);
 
-renderer.render(scene, camera);
+// postprocessing 
+let composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
 
+const effect1 = new ShaderPass(DotScreenShader);
+effect1.uniforms['scale'].value = 4;
+composer.addPass(effect1);
+
+const effect2 = new ShaderPass(RGBShiftShader);
+effect2.uniforms['amount'].value = 0.0015;
+composer.addPass(effect2);
+
+window.addEventListener('resize', onWindowResize);
 const geometry = new THREE.TorusGeometry(10, 3, 16, 100); // 1. Creates the object
 const material = new THREE.MeshStandardMaterial({
   color: 0xFF6347,
@@ -39,8 +68,10 @@ const controls = new OrbitControls(camera, renderer.domElement);
 const samiTexture = new THREE.TextureLoader().load('./Pictures/DSCF9075.jpg')
 
 const sami = new THREE.Mesh(
-  new THREE.BoxGeometry(3,3,3),
-  new THREE.MeshBasicMaterial({map: samiTexture})
+  new THREE.BoxGeometry(3, 3, 3),
+  new THREE.MeshBasicMaterial({
+    map: samiTexture
+  })
 );
 scene.add(sami);
 // Moon
@@ -48,50 +79,79 @@ const moonTexture = new THREE.TextureLoader().load('./Pictures/moon.jpg');
 const normalTexture = new THREE.TextureLoader().load('./Pitctures/normal.jpg');
 
 const moon = new THREE.Mesh(
-  new THREE.SphereGeometry(3,32,32),
+  new THREE.SphereGeometry(3, 32, 32),
   new THREE.MeshStandardMaterial({
     map: moonTexture,
     normalMap: normalTexture
   })
 );
 scene.add(moon);
- moon.position.z = 20;
- moon.position.setX(-10);
-function addStar(){
-  const geometry = new THREE.SphereGeometry(0.25, 24, 24);
-  const material= new THREE.MeshStandardMaterial({color: 0xffffff})
-  const star = new THREE.Mesh(geometry, material);
-  const [x,y,z]=Array(3).fill().map(()=> THREE.MathUtils.randFloatSpread(100));
+moon.position.z = 20;
+moon.position.setX(-10);
 
-  star.position.set(x,y,z);
+function addStar() {
+  const geometry = new THREE.SphereGeometry(0.25, 24, 24);
+  // const space = new THREE.TextureLoader().load('./Pictures/space.jpg')
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xffffff
+  })
+
+
+  /*const material = new THREE.MeshStandardMaterial({
+    map: space,
+    normalMap: normalTexture
+  })*/
+  const star = new THREE.Mesh(geometry, material);
+  const [x, y, z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(100));
+
+  star.position.set(x, y, z);
   scene.add(star)
 }
 Array(200).fill().forEach(addStar)
-const backgroundTexture = new THREE.TextureLoader().load('./Pictures/pexels-juan-agustin-2340254.jpg');
-scene.background=backgroundTexture;
+const backgroundTexture = new THREE.TextureLoader().load('./Pictures/Schalplatte.jpg');
+scene.background = backgroundTexture;
 
-function moveCamera(){
+function moveCamera() {
   const t = document.body.getBoundingClientRect().top;
-  moon.rotation.x +=0.05;
-  moon.rotation.y +=0.075;
-  moon.rotation.z +=0.05;
+  // Make some objects rotate on scrolling
+  moon.rotation.x += 0.005;
+  moon.rotation.y += 0.075;
+  moon.rotation.z += 0.005;
+  torus.rotation.x += 0.001;
+  torus.rotation.y += 0.0005;
+  torus.rotation.z += 0.001;
+  sami.rotation.z += 0.0075;
+  sami.rotation.y += 0.0075;
 
-  
-  sami.rotation.z +=0.01;
-  sami.rotation.y +=0.05;
-  camera.position.z = t* -0.01;
-  camera.position.x= t* -0.0002;
-  camera.position.y = t* -0.0002;
-  
-  
+  camera.position.z = t * -0.01; // Camera scroll effect
+  camera.position.x = t * -0.0002;
+  camera.position.y = t * -0.0002;
+
+
 }
-document.body.onscroll=moveCamera;
+document.body.onscroll = moveCamera;
+
 function animate() {
   requestAnimationFrame(animate);
-  torus.rotation.x += 0.01;
+  torus.rotation.x += 0.001;
   torus.rotation.y += 0.005;
-  torus.rotation.z += 0.01;
+  torus.rotation.z += 0.001;
+
+  sami.rotation.z += 0.001;
+  sami.rotation.y += 0.005;
+
   controls.update;
-  renderer.render(scene, camera);
+  composer.render();
 }
 animate()
+
+function init(){
+
+}
+
+function onWindowResize(){
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
